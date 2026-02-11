@@ -37,7 +37,7 @@
    brew install zenoh
    ```
 
-   启动路由器：`zenohd`
+   启动路由器：`zenohd`，`zenohd -l tcp/0.0.0.0:7447`。
 
 2. 安装 **C++ 编译依赖**（编译本示例所必需）：
    - `zenoh-cpp` 依赖 C 后端，需同时安装 **libzenohc**（C 库）和 **libzenohcpp**（C++ 封装）：

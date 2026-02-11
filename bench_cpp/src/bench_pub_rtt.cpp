@@ -384,6 +384,12 @@ int main(int argc, char** argv) {
         const double mb_per_s =
             (dur_s > 0.0) ? ((static_cast<double>(sent) * args.payload_bytes) / dur_s / 1024.0 / 1024.0)
                           : 0.0;
+        const double timeout_ratio_sent =
+            (sent > 0) ? (static_cast<double>(timeouts) / static_cast<double>(sent) * 100.0) : 0.0;
+        const double out_of_order_ratio =
+            (ack_received > 0)
+                ? (static_cast<double>(out_of_order) / static_cast<double>(ack_received) * 100.0)
+                : 0.0;
 
         std::uint64_t pending_inflight = 0;
         {
@@ -413,8 +419,8 @@ int main(int argc, char** argv) {
                   << "运行时长: " << dur_s << " 秒\n"
                   << "发送请求: " << sent << " 条\n"
                   << "收到 ACK: " << ack_received << " 条\n"
-                  << "超时次数: " << timeouts << " 条\n"
-                  << "乱序 ACK: " << out_of_order << " 条\n"
+                  << "超时次数: " << timeouts << " 条（占已发送 " << timeout_ratio_sent << " %）\n"
+                  << "乱序 ACK: " << out_of_order << " 条（占已收到 ACK " << out_of_order_ratio << " %）\n"
                   << "在途未完成: " << pending_inflight << " 条\n"
                   << "发送速率: " << sent_per_s << " 条/秒\n"
                   << "ACK 速率: " << ack_per_s << " 条/秒\n"
