@@ -1,0 +1,43 @@
+# Build
+build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# C++ / compiled
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+a.out
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (optional; uncomment to ignore)
+# .vscode/
+# .idea/
+*.swp
+*.swo
+*~

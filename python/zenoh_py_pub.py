@@ -8,6 +8,7 @@ KEY = "demo/zenoh/getting-started"
 
 def main() -> None:
     conf = zenoh.Config()
+    conf.insert_json5("connect/endpoints", '["tcp/127.0.0.1:7447"]')
     with zenoh.open(conf) as session:
         print(f"Opened zenoh session. Declaring Python publisher on key: {KEY}")
         pub = session.declare_publisher(KEY)

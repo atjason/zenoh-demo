@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 
     try {
         Config config = Config::create_default();
+        config.insert_json5("connect/endpoints", R"(["tcp/127.0.0.1:7447"])");
         auto session = Session::open(std::move(config));
 
         std::cout << "Opened zenoh session. Declared subscriber on key: " << key << std::endl;
