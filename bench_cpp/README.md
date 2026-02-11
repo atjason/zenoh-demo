@@ -27,7 +27,9 @@
 ## 环境要求
 
 - CMake ≥ 3.10，C++17
-- 已安装 Zenoh C/C++ 库（`libzenohc`、`libzenohcpp`），与仓库根目录 C++ 示例相同
+- 已安装 Zenoh C/C++ 库（与仓库根目录 C++ 示例相同）：
+  - macOS/Homebrew：`brew install libzenohc libzenohcpp`
+  - Ubuntu/Debian：`sudo apt install libzenohc-dev libzenohcpp-dev`
 - 运行压测时需有可达的 **zenoh 路由器**（如 `zenohd`），通常监听 `tcp/0.0.0.0:7447`
 
 ---

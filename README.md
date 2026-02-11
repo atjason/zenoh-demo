@@ -20,9 +20,15 @@
   - Python 3.8+
   - `pip` 可用
 
-#### 安装 zenoh 与 C++ 库（macOS / Homebrew）
+#### 安装 zenoh 路由器与 C/C++ 库
 
-使用官方 [Eclipse Zenoh Homebrew tap](https://github.com/eclipse-zenoh/homebrew-zenoh) 安装，无需从源码编译。
+> 说明：**apt 包名**和 **CMake `find_package()` 包名**不是一回事。
+>
+> - Ubuntu/Debian 上你需要安装的开发包叫 `libzenohcpp-dev`，但本项目 CMake 仍然是 `find_package(zenohcxx)`（这是 Zenoh C++ API 的 CMake 包名）。
+
+##### macOS / Homebrew
+
+使用官方 [Eclipse Zenoh Homebrew tap](https://github.com/eclipse-zenoh/homebrew-zenoh) 安装。
 
 1. 添加 tap 并安装 **zenoh 路由器**（可选，用于多机或路由模式）：
 
@@ -42,6 +48,42 @@
    ```
 
    安装后 CMake 会从 Homebrew 前缀自动找到库，无需额外设置 `CMAKE_PREFIX_PATH`。
+
+##### Ubuntu 22.04 / Debian（x86_64 等）
+
+1. 添加 Eclipse Zenoh apt 源并安装路由器（`zenohd`）：
+
+   ```bash
+   # 添加公钥到 keyring
+   curl -L https://download.eclipse.org/zenoh/debian-repo/zenoh-public-key \
+     | sudo gpg --dearmor --yes --output /etc/apt/keyrings/zenoh-public-key.gpg
+
+   # 添加源并更新
+   echo "deb [signed-by=/etc/apt/keyrings/zenoh-public-key.gpg] https://download.eclipse.org/zenoh/debian-repo/ /" \
+     | sudo tee -a /etc/apt/sources.list > /dev/null
+   sudo apt update
+
+   # 安装路由器（也可以安装 meta 包 `zenoh`，里面会拉取 `zenohd`）
+   sudo apt install zenohd
+   ```
+
+   启动路由器：`zenohd`
+
+2. 安装 **Zenoh C / C++ 开发库**（提供 CMake 的 `zenohc`、`zenohcxx` 包）：
+
+   ```bash
+   sudo apt install libzenohc-dev libzenohcpp-dev
+   ```
+
+3. 安装 C++ 编译工具链（如还没装）：
+
+   ```bash
+   sudo apt install build-essential cmake pkg-config
+   ```
+
+> 若你不是安装到系统默认前缀（例如自行 `cmake --install` 到 `~/.local`），请在配置时指定：
+>
+> - `cmake -DCMAKE_PREFIX_PATH="$HOME/.local" ../cpp`
 
 ### 2. Python 示例
 
@@ -107,10 +149,13 @@
 
 ### 5. 常见问题简要提示
 
-- 如 C++ 构建阶段找不到 `zenoh-cpp`：
-  - 请确认已按照上方「安装 zenoh 与 C++ 库」安装；非 macOS 可参考官方文档并配置 CMake 查找路径（如 `CMAKE_PREFIX_PATH`）。
+- 如 C++ 构建阶段找不到 `zenohc` / `zenohcxx`（CMake `find_package` 失败）：
+  - Ubuntu/Debian：确认已安装 `libzenohc-dev libzenohcpp-dev`
+  - 若你把库安装在非系统前缀：配置时加 `-DCMAKE_PREFIX_PATH=/path/to/prefix`
 - 如报错 **Failed to detect zenoh-cpp backend, you need to have either zenoh-c or zenoh-pico installed**：
-  - 说明只安装了 C++ 封装，未安装 C 后端。macOS 上请执行：`brew install libzenohc`（与 `libzenohcpp` 一起使用）。
+  - 说明只安装了 C++ 封装，未安装 C 后端：
+    - macOS：`brew install libzenohc libzenohcpp`
+    - Ubuntu/Debian：`sudo apt install libzenohc-dev libzenohcpp-dev`
 - 如收不到消息：
   - 确认路由器或 peer 已运行。
   - 确认发布者和订阅者使用的是同一 key（本示例默认 `demo/zenoh/getting-started`）。
