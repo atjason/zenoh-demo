@@ -124,6 +124,7 @@ int main(int argc, char** argv) {
         std::uint64_t out_of_order = 0;
         std::uint64_t last_seq = 0;
         bool have_last_seq = false;
+        std::size_t last_payload_bytes = 0;
         std::mutex mu;
 
         const auto start_tp = Clock::now();
@@ -145,6 +146,7 @@ int main(int argc, char** argv) {
                 {
                     std::lock_guard<std::mutex> lk(mu);
                     ++recv_count;
+                    last_payload_bytes = payload.size();
                     if (have_prev) {
                         const auto dt =
                             std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now_tp - prev_tp);
@@ -186,11 +188,13 @@ int main(int argc, char** argv) {
             std::chrono::duration_cast<std::chrono::duration<double>>(end_tp - start_tp).count();
         std::uint64_t recv_count_snapshot = 0;
         std::uint64_t out_of_order_snapshot = 0;
+        std::size_t payload_bytes_snapshot = 0;
         OnlineStats interarrival_snapshot{};
         {
             std::lock_guard<std::mutex> lk(mu);
             recv_count_snapshot = recv_count;
             out_of_order_snapshot = out_of_order;
+            payload_bytes_snapshot = last_payload_bytes;
             interarrival_snapshot = interarrival_us;
         }
 
@@ -198,7 +202,7 @@ int main(int argc, char** argv) {
             (dur_s > 0.0) ? (static_cast<double>(recv_count_snapshot) / dur_s) : 0.0;
         const double mb_per_s =
             (dur_s > 0.0)
-                ? ((static_cast<double>(recv_count_snapshot) * bench::kPayloadBytes) / dur_s / 1024.0 / 1024.0)
+                ? ((static_cast<double>(recv_count_snapshot) * payload_bytes_snapshot) / dur_s / 1024.0 / 1024.0)
                 : 0.0;
 
         const auto old_flags = std::cout.flags();
@@ -210,7 +214,7 @@ int main(int argc, char** argv) {
                   << "运行时长: " << dur_s << " 秒\n"
                   << "收到请求: " << recv_count_snapshot << " 条\n"
                   << "处理速率: " << msg_per_s << " 条/秒\n"
-                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << bench::kPayloadBytes << " 字节）\n"
+                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << payload_bytes_snapshot << " 字节）\n"
                   << "乱序请求: " << out_of_order_snapshot << " 条\n";
 
         if (interarrival_snapshot.n > 0) {

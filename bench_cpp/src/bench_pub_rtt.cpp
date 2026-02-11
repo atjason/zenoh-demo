@@ -49,7 +49,7 @@ struct Args {
     std::string req_key = bench::kDefaultReqKey;
     std::string ack_key = bench::kDefaultAckKey;
     int rate_hz = 1000;
-    std::size_t payload_bytes = bench::kPayloadBytes;  // fixed 1024
+    std::size_t payload_bytes = bench::kPayloadBytes;  // default 1024
 
     // End condition:
     std::uint64_t count = 0;       // if >0: send exactly this many
@@ -111,7 +111,8 @@ bool parse_args(int argc, char** argv, Args& out) {
                 << "  --req-key         <keyexpr>   (default: " << bench::kDefaultReqKey << ")\n"
                 << "  --ack-key         <keyexpr>   (default: " << bench::kDefaultAckKey << ")\n"
                 << "  --rate-hz         <int>       (default: 1000)\n"
-                << "  --payload-bytes   <int>       (must be 1024)\n"
+                << "  --payload-bytes   <int>       (default: " << bench::kPayloadBytes
+                << ", must be >= " << sizeof(bench::ReqHeader) << ")\n"
                 << "  --count           <uint64>    (if set, ignore --duration-sec)\n"
                 << "  --duration-sec    <double>    (default: 10.0)\n"
                 << "  --ack-timeout-ms  <int>       (default: 100)\n"
@@ -154,8 +155,8 @@ int main(int argc, char** argv) {
         std::cerr << "--rate-hz must be > 0\n";
         return 2;
     }
-    if (args.payload_bytes != bench::kPayloadBytes) {
-        std::cerr << "--payload-bytes must be " << bench::kPayloadBytes << "\n";
+    if (args.payload_bytes < sizeof(bench::ReqHeader)) {
+        std::cerr << "--payload-bytes must be >= " << sizeof(bench::ReqHeader) << "\n";
         return 2;
     }
 
@@ -277,7 +278,7 @@ int main(int argc, char** argv) {
                 inflight.push_back(seq);
             }
 
-            std::string payload = bench::make_req_payload(seq, send_ns);
+            std::string payload = bench::make_req_payload(seq, send_ns, args.payload_bytes);
             req_pub.put(payload);
 
             if (!args.quiet && (seq % 1000 == 0)) {
@@ -381,7 +382,7 @@ int main(int argc, char** argv) {
         const double sent_per_s = (dur_s > 0.0) ? (static_cast<double>(sent) / dur_s) : 0.0;
         const double ack_per_s = (dur_s > 0.0) ? (static_cast<double>(ack_received) / dur_s) : 0.0;
         const double mb_per_s =
-            (dur_s > 0.0) ? ((static_cast<double>(sent) * bench::kPayloadBytes) / dur_s / 1024.0 / 1024.0)
+            (dur_s > 0.0) ? ((static_cast<double>(sent) * args.payload_bytes) / dur_s / 1024.0 / 1024.0)
                           : 0.0;
 
         std::uint64_t pending_inflight = 0;
@@ -417,7 +418,7 @@ int main(int argc, char** argv) {
                   << "在途未完成: " << pending_inflight << " 条\n"
                   << "发送速率: " << sent_per_s << " 条/秒\n"
                   << "ACK 速率: " << ack_per_s << " 条/秒\n"
-                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << bench::kPayloadBytes << " 字节）\n";
+                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << args.payload_bytes << " 字节）\n";
 
         if (rtt_us_stats.n > 0) {
             std::cout << "RTT（微秒 us）: 平均 " << rtt_us_stats.mean << "，最小 " << rtt_us_stats.min_v

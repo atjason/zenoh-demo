@@ -88,6 +88,12 @@ zenohd
 ./build/bench_cpp/bench_pub_rtt --connect tcp/192.168.1.100:7447 --rate-hz 1000 --duration-sec 10 --ack-timeout-ms 100
 ```
 
+或指定载荷大小（默认 1024 字节，例如 4096）：
+
+```bash
+./build/bench_cpp/bench_pub_rtt --connect tcp/127.0.0.1:7447 --rate-hz 1000 --payload-bytes 4096 --count 100000
+```
+
 ### 5. 结束与查看结果
 
 - 发送端在发完 `--count` 条或到达 `--duration-sec` 后会自动打印 summary 并退出（也可 Ctrl+C 提前结束）。
@@ -116,7 +122,7 @@ zenohd
 | `--req-key` | 请求 key | `demo/zenoh/bench/req` |
 | `--ack-key` | ACK key | `demo/zenoh/bench/ack` |
 | `--rate-hz` | 发送频率（Hz） | 1000 |
-| `--payload-bytes` | 载荷字节数（必须 1024） | 1024 |
+| `--payload-bytes` | 载荷字节数（可传参，须 ≥16） | 1024 |
 | `--count` | 发送总条数（设则忽略 `--duration-sec`） | 0 |
 | `--duration-sec` | 发送时长（秒），`--count` 未设时生效 | 10.0 |
 | `--ack-timeout-ms` | ACK 超时（毫秒），超时计为 timeouts | 100 |
@@ -152,7 +158,7 @@ RTT 抖动（标准差，微秒 us）: 85.300
 | 乱序 ACK | 收到的 ACK 序列号小于等于上一条的次数（乱序）。 |
 | 在途未完成 | 结束时仍未收到 ACK（且未计为超时）的条数，正常应为 0 或很小。 |
 | 发送速率 / ACK 速率 | 条/秒，应接近 `--rate-hz`。 |
-| 吞吐量 | 按 1KB/条计算的发送带宽（MiB/s）。 |
+| 吞吐量 | 按 `--payload-bytes` 每条计算的发送带宽（MiB/s），默认 1KB/条。 |
 | RTT（平均/最小/最大） | RTT 往返时延（微秒 us），最大值同时给出约等于多少毫秒（ms）。 |
 | RTT 分位数（P50/P95/P99） | 用于观察长尾延迟。 |
 | RTT 抖动（标准差） | RTT 波动程度（微秒 us）。 |
@@ -177,7 +183,7 @@ RTT 抖动（标准差，微秒 us）: 85.300
 | 运行时长 | 从启动到进程退出的时长。 |
 | 收到请求 | 收到的请求条数（即发出的 ACK 条数）。 |
 | 处理速率 | 条/秒。 |
-| 吞吐量 | 按 1KB/条计算的接收带宽（MiB/s）。 |
+| 吞吐量 | 按实际收到的 payload 大小每条计算的接收带宽（MiB/s），发送端默认 1KB/条。 |
 | 乱序请求 | 请求序列号小于等于上一条的次数。 |
 | 到达间隔（平均/最小/最大） | 相邻两条请求到达时间间隔（微秒 us），目标 1kHz 时理想约 1000 us；最大值同时给出约等于多少毫秒（ms）。 |
 | 到达间隔抖动（标准差） | 反映**抖动**大小（微秒 us）。 |
@@ -191,4 +197,4 @@ RTT 抖动（标准差，微秒 us）: 85.300
 - **延迟**：主要看发送端 `rtt_us_avg`、`rtt_us_p95`/`rtt_us_p99`；若需粗略估计单向延迟，可参考 `RTT/2`（假设链路大致对称）。
 - **抖动**：看接收端 `interarrival_us_stddev`、`interarrival_us_max`；发送端可看 `rtt_us_stddev`。
 - **可靠性**：`timeouts` 应尽量为 0 或很小；`ack_received` 应接近 `sent`；`out_of_order` 多则说明存在乱序。
-- **吞吐**：`sent_per_sec`/`ack_per_sec` 接近 `--rate-hz`、`mb_per_sec` 约 1 MB/s（1kHz × 1KB）即达标。
+- **吞吐**：`sent_per_sec`/`ack_per_sec` 接近 `--rate-hz`、`mb_per_sec` 约 1 MB/s（1kHz × 默认 1KB）即达标；可用 `--payload-bytes` 改变每条大小。

@@ -28,10 +28,17 @@ struct AckHeader {
 static_assert(sizeof(ReqHeader) == 16, "ReqHeader size must be 16 bytes");
 static_assert(sizeof(AckHeader) == 24, "AckHeader size must be 24 bytes");
 
-inline std::string make_req_payload(std::uint64_t seq, std::uint64_t client_send_mono_ns) {
-    std::string payload(kPayloadBytes, '\0');
+inline std::string make_req_payload(std::uint64_t seq,
+                                    std::uint64_t client_send_mono_ns,
+                                    std::size_t payload_bytes = kPayloadBytes) {
+    // Ensure the payload is large enough to hold the header.
+    if (payload_bytes < sizeof(ReqHeader)) {
+        payload_bytes = sizeof(ReqHeader);
+    }
+
+    std::string payload(payload_bytes, '\0');
     ReqHeader hdr{seq, client_send_mono_ns};
-    std::memcpy(payload.data(), &hdr, sizeof(hdr));
+    std::memcpy(&payload[0], &hdr, sizeof(hdr));
     return payload;
 }
 
@@ -40,7 +47,7 @@ inline std::string make_ack_payload(std::uint64_t seq,
                                     std::uint64_t server_send_mono_ns) {
     std::string payload(sizeof(AckHeader), '\0');
     AckHeader hdr{seq, server_recv_mono_ns, server_send_mono_ns};
-    std::memcpy(payload.data(), &hdr, sizeof(hdr));
+    std::memcpy(&payload[0], &hdr, sizeof(hdr));
     return payload;
 }
 
