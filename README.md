@@ -15,10 +15,33 @@
     - `zenohd`
 - **C++ 环境**：
   - CMake（>= 3.x）
-  - 已安装 `zenoh-cpp` 及其依赖（请参考官方文档）
+  - 已安装 `zenoh-cpp` 及其依赖（见下方「安装 zenoh 与 C++ 库」）
 - **Python 环境**：
   - Python 3.8+
   - `pip` 可用
+
+#### 安装 zenoh 与 C++ 库（macOS / Homebrew）
+
+使用官方 [Eclipse Zenoh Homebrew tap](https://github.com/eclipse-zenoh/homebrew-zenoh) 安装，无需从源码编译。
+
+1. 添加 tap 并安装 **zenoh 路由器**（可选，用于多机或路由模式）：
+
+   ```bash
+   brew tap eclipse-zenoh/homebrew-zenoh
+   brew install zenoh
+   ```
+
+   启动路由器：`zenohd`
+
+2. 安装 **C++ 编译依赖**（编译本示例所必需）：
+   - `zenoh-cpp` 依赖 C 后端，需同时安装 **libzenohc**（C 库）和 **libzenohcpp**（C++ 封装）：
+
+   ```bash
+   brew tap eclipse-zenoh/homebrew-zenoh
+   brew install libzenohc libzenohcpp
+   ```
+
+   安装后 CMake 会从 Homebrew 前缀自动找到库，无需额外设置 `CMAKE_PREFIX_PATH`。
 
 ### 2. Python 示例
 
@@ -85,7 +108,9 @@
 ### 5. 常见问题简要提示
 
 - 如 C++ 构建阶段找不到 `zenoh-cpp`：
-  - 请确认已按照官方文档正确安装库并配置 CMake 查找路径（如 `CMAKE_PREFIX_PATH`）。
+  - 请确认已按照上方「安装 zenoh 与 C++ 库」安装；非 macOS 可参考官方文档并配置 CMake 查找路径（如 `CMAKE_PREFIX_PATH`）。
+- 如报错 **Failed to detect zenoh-cpp backend, you need to have either zenoh-c or zenoh-pico installed**：
+  - 说明只安装了 C++ 封装，未安装 C 后端。macOS 上请执行：`brew install libzenohc`（与 `libzenohcpp` 一起使用）。
 - 如收不到消息：
   - 确认路由器或 peer 已运行。
   - 确认发布者和订阅者使用的是同一 key（本示例默认 `demo/zenoh/getting-started`）。
