@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
         auto subscriber = session.declare_subscriber(
             KeyExpr(key),
             [](const Sample& sample) {
-                std::cout << "[C++ sub] Received ('" << sample.get_keyexpr().as_string()
+                std::cout << "[C++ sub] Received ('" << sample.get_keyexpr().as_string_view()
                           << "': '" << sample.get_payload().as_string() << "')" << std::endl;
             },
             closures::none);
