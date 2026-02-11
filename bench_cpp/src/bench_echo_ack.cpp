@@ -7,6 +7,7 @@
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <mutex>
@@ -200,17 +201,29 @@ int main(int argc, char** argv) {
                 ? ((static_cast<double>(recv_count_snapshot) * bench::kPayloadBytes) / dur_s / 1024.0 / 1024.0)
                 : 0.0;
 
-        std::cout << "summary "
-                  << "duration_sec=" << dur_s << " recv=" << recv_count_snapshot << " msg_per_sec=" << msg_per_s
-                  << " mb_per_sec=" << mb_per_s << " out_of_order=" << out_of_order_snapshot;
+        const auto old_flags = std::cout.flags();
+        const auto old_prec = std::cout.precision();
+        std::cout.setf(std::ios::fixed);
+        std::cout << std::setprecision(3);
+
+        std::cout << "=== 汇总（ACK 回声服务端）===\n"
+                  << "运行时长: " << dur_s << " 秒\n"
+                  << "收到请求: " << recv_count_snapshot << " 条\n"
+                  << "处理速率: " << msg_per_s << " 条/秒\n"
+                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << bench::kPayloadBytes << " 字节）\n"
+                  << "乱序请求: " << out_of_order_snapshot << " 条\n";
 
         if (interarrival_snapshot.n > 0) {
-            std::cout << " interarrival_us_avg=" << interarrival_snapshot.mean
-                      << " interarrival_us_min=" << interarrival_snapshot.min_v
-                      << " interarrival_us_max=" << interarrival_snapshot.max_v
-                      << " interarrival_us_stddev=" << interarrival_snapshot.stddev();
+            std::cout << "到达间隔（微秒 us）: 平均 " << interarrival_snapshot.mean << "，最小 " << interarrival_snapshot.min_v
+                      << "，最大 " << interarrival_snapshot.max_v
+                      << "（约 " << (interarrival_snapshot.max_v / 1000.0) << " ms）\n"
+                      << "到达间隔抖动（标准差，微秒 us）: " << interarrival_snapshot.stddev() << "\n";
+        } else {
+            std::cout << "到达间隔: 无有效样本\n";
         }
-        std::cout << "\n";
+
+        std::cout.flags(old_flags);
+        std::cout.precision(old_prec);
     } catch (const std::exception& e) {
         std::cerr << "Error in bench_echo_ack: " << e.what() << "\n";
         return 1;

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <mutex>
@@ -402,21 +403,33 @@ int main(int argc, char** argv) {
         const double p95 = percentile_sorted(sorted, 0.95);
         const double p99 = percentile_sorted(sorted, 0.99);
 
-        std::cout << "summary "
-                  << "duration_sec=" << dur_s << " sent=" << sent << " ack_received=" << ack_received
-                  << " timeouts=" << timeouts << " out_of_order=" << out_of_order
-                  << " pending_inflight=" << pending_inflight
-                  << " sent_per_sec=" << sent_per_s << " ack_per_sec=" << ack_per_s
-                  << " mb_per_sec=" << mb_per_s;
+        const auto old_flags = std::cout.flags();
+        const auto old_prec = std::cout.precision();
+        std::cout.setf(std::ios::fixed);
+        std::cout << std::setprecision(3);
+
+        std::cout << "=== 汇总（RTT 往返时延测试）===\n"
+                  << "运行时长: " << dur_s << " 秒\n"
+                  << "发送请求: " << sent << " 条\n"
+                  << "收到 ACK: " << ack_received << " 条\n"
+                  << "超时次数: " << timeouts << " 条\n"
+                  << "乱序 ACK: " << out_of_order << " 条\n"
+                  << "在途未完成: " << pending_inflight << " 条\n"
+                  << "发送速率: " << sent_per_s << " 条/秒\n"
+                  << "ACK 速率: " << ack_per_s << " 条/秒\n"
+                  << "吞吐量: " << mb_per_s << " MiB/秒（payload=" << bench::kPayloadBytes << " 字节）\n";
 
         if (rtt_us_stats.n > 0) {
-            std::cout << " rtt_us_avg=" << rtt_us_stats.mean
-                      << " rtt_us_min=" << rtt_us_stats.min_v
-                      << " rtt_us_max=" << rtt_us_stats.max_v
-                      << " rtt_us_p50=" << p50 << " rtt_us_p95=" << p95 << " rtt_us_p99=" << p99
-                      << " rtt_us_stddev=" << rtt_us_stats.stddev();
+            std::cout << "RTT（微秒 us）: 平均 " << rtt_us_stats.mean << "，最小 " << rtt_us_stats.min_v
+                      << "，最大 " << rtt_us_stats.max_v << "（约 " << (rtt_us_stats.max_v / 1000.0) << " ms）\n"
+                      << "RTT 分位数（微秒 us）: P50 " << p50 << "，P95 " << p95 << "，P99 " << p99 << "\n"
+                      << "RTT 抖动（标准差，微秒 us）: " << rtt_us_stats.stddev() << "\n";
+        } else {
+            std::cout << "RTT: 无有效样本\n";
         }
-        std::cout << "\n";
+
+        std::cout.flags(old_flags);
+        std::cout.precision(old_prec);
     } catch (const std::exception& e) {
         std::cerr << "Error in bench_pub_rtt: " << e.what() << "\n";
         return 1;

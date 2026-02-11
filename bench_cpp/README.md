@@ -39,14 +39,14 @@
 在仓库根目录执行：
 
 ```bash
-cmake -S bench_cpp -B build-bench
-cmake --build build-bench -j
+cmake -S bench_cpp -B build/bench_cpp
+cmake --build build/bench_cpp -j
 ```
 
-生成的可执行文件位于 `build-bench/`：
+生成的可执行文件位于 `build/bench_cpp/`：
 
-- `build-bench/bench_echo_ack`
-- `build-bench/bench_pub_rtt`
+- `build/bench_cpp/bench_echo_ack`
+- `build/bench_cpp/bench_pub_rtt`
 
 ### 2. 启动 zenoh 路由器（若尚未运行）
 
@@ -63,13 +63,13 @@ zenohd
 在**接收端机器**（或本机同机测试）运行：
 
 ```bash
-./build-bench/bench_echo_ack --connect tcp/127.0.0.1:7447
+./build/bench_cpp/bench_echo_ack --connect tcp/127.0.0.1:7447
 ```
 
 局域网时改为路由器/对端 IP，例如：
 
 ```bash
-./build-bench/bench_echo_ack --connect tcp/192.168.1.100:7447
+./build/bench_cpp/bench_echo_ack --connect tcp/192.168.1.100:7447
 ```
 
 ### 4. 再启动发送端（1kHz 发送 + RTT 统计）
@@ -77,13 +77,13 @@ zenohd
 在**发送端机器**运行，推荐用 `--count` 做固定条数测试：
 
 ```bash
-./build-bench/bench_pub_rtt --connect tcp/127.0.0.1:7447 --rate-hz 1000 --count 100000 --ack-timeout-ms 100
+./build/bench_cpp/bench_pub_rtt --connect tcp/127.0.0.1:7447 --rate-hz 1000 --count 100000 --ack-timeout-ms 100
 ```
 
 或按时长（默认 10 秒）：
 
 ```bash
-./build-bench/bench_pub_rtt --connect tcp/192.168.1.100:7447 --rate-hz 1000 --duration-sec 10 --ack-timeout-ms 100
+./build/bench_cpp/bench_pub_rtt --connect tcp/192.168.1.100:7447 --rate-hz 1000 --duration-sec 10 --ack-timeout-ms 100
 ```
 
 ### 5. 结束与查看结果
@@ -91,7 +91,7 @@ zenohd
 - 发送端在发完 `--count` 条或到达 `--duration-sec` 后会自动打印 summary 并退出（也可 Ctrl+C 提前结束）。
 - 接收端需在发送端结束后按 **Ctrl+C** 退出，退出时会打印 summary。
 
-两端的 summary 均为一行 `key=value` 格式，便于脚本解析或人工查看。
+两端退出时都会输出一段中文“汇总”信息（分行、带单位），便于非专业人士阅读。
 
 ---
 
@@ -127,43 +127,58 @@ zenohd
 ### 发送端（bench_pub_rtt）summary 示例
 
 ```
-summary duration_sec=100.5 sent=100000 ack_received=99800 timeouts=200 out_of_order=0 pending_inflight=0 sent_per_sec=995.02 ack_per_sec=993.03 mb_per_sec=0.99 rtt_us_avg=450.2 rtt_us_min=320.1 rtt_us_max=2100.5 rtt_us_p50=420.0 rtt_us_p95=680.0 rtt_us_p99=1200.0 rtt_us_stddev=85.3
+=== 汇总（RTT 往返时延测试）===
+运行时长: 100.500 秒
+发送请求: 100000 条
+收到 ACK: 99800 条
+超时次数: 200 条
+乱序 ACK: 0 条
+在途未完成: 0 条
+发送速率: 995.020 条/秒
+ACK 速率: 993.030 条/秒
+吞吐量: 0.990 MiB/秒（payload=1024 字节）
+RTT（微秒 us）: 平均 450.200，最小 320.100，最大 2100.500（约 2.101 ms）
+RTT 分位数（微秒 us）: P50 420.000，P95 680.000，P99 1200.000
+RTT 抖动（标准差，微秒 us）: 85.300
 ```
 
 | 指标 | 含义 |
 |------|------|
-| `duration_sec` | 从开始发送到结束的时长（秒）。 |
-| `sent` | 实际发送的请求条数。 |
-| `ack_received` | 在超时前收到的 ACK 条数，即有效 RTT 样本数。 |
-| `timeouts` | 在 `--ack-timeout-ms` 内未收到 ACK 的条数，可视为丢包或严重延迟。 |
-| `out_of_order` | 收到的 ACK 序列号小于等于上一条的次数（乱序）。 |
-| `pending_inflight` | 结束时仍未收到 ACK（且未计为 timeout）的条数，正常应为 0 或很小。 |
-| `sent_per_sec` | 发送速率（条/秒），应接近 `--rate-hz`。 |
-| `ack_per_sec` | 有效 ACK 速率（条/秒）。 |
-| `mb_per_sec` | 按 1KB/条计算的发送带宽（MB/s）。 |
-| `rtt_us_avg` | RTT 平均值（微秒）。 |
-| `rtt_us_min` / `rtt_us_max` | RTT 最小/最大值（微秒）。 |
-| `rtt_us_p50` / `rtt_us_p95` / `rtt_us_p99` | RTT 的 50%/95%/99% 分位（微秒），用于看长尾延迟。 |
-| `rtt_us_stddev` | RTT 标准差（微秒），反映 RTT 波动。 |
+| 运行时长 | 从开始发送到结束的时长（秒）。 |
+| 发送请求 / 收到 ACK | 实际发送的请求条数 / 收到的 ACK 条数（即有效 RTT 样本数）。 |
+| 超时次数 | 在 `--ack-timeout-ms` 内未收到 ACK 的条数，可视为丢包或严重延迟。 |
+| 乱序 ACK | 收到的 ACK 序列号小于等于上一条的次数（乱序）。 |
+| 在途未完成 | 结束时仍未收到 ACK（且未计为超时）的条数，正常应为 0 或很小。 |
+| 发送速率 / ACK 速率 | 条/秒，应接近 `--rate-hz`。 |
+| 吞吐量 | 按 1KB/条计算的发送带宽（MiB/s）。 |
+| RTT（平均/最小/最大） | RTT 往返时延（微秒 us），最大值同时给出约等于多少毫秒（ms）。 |
+| RTT 分位数（P50/P95/P99） | 用于观察长尾延迟。 |
+| RTT 抖动（标准差） | RTT 波动程度（微秒 us）。 |
 
 **注意**：RTT 为「请求发出 → 收到对应 ACK」的往返时间，全部在发送端本机用单调时钟测量，**不依赖两台电脑系统时间是否一致**。
 
 ### 接收端（bench_echo_ack）summary 示例
 
 ```
-summary duration_sec=100.5 recv=99800 msg_per_sec=993.03 mb_per_sec=0.99 out_of_order=0 interarrival_us_avg=1007.2 interarrival_us_min=800.1 interarrival_us_max=2500.0 interarrival_us_stddev=120.5
+=== 汇总（ACK 回声服务端）===
+运行时长: 100.500 秒
+收到请求: 99800 条
+处理速率: 993.030 条/秒
+吞吐量: 0.990 MiB/秒（payload=1024 字节）
+乱序请求: 0 条
+到达间隔（微秒 us）: 平均 1007.200，最小 800.100，最大 2500.000（约 2.500 ms）
+到达间隔抖动（标准差，微秒 us）: 120.500
 ```
 
 | 指标 | 含义 |
 |------|------|
-| `duration_sec` | 从首次收到请求到进程退出的时长。 |
-| `recv` | 收到的请求条数（即发出的 ACK 条数）。 |
-| `msg_per_sec` | 接收速率（条/秒）。 |
-| `mb_per_sec` | 按 1KB/条计算的接收带宽（MB/s）。 |
-| `out_of_order` | 请求序列号小于等于上一条的次数。 |
-| `interarrival_us_avg` | 相邻两条请求到达时间间隔的平均值（微秒），目标 1kHz 时理想约 1000 μs。 |
-| `interarrival_us_min` / `interarrival_us_max` | 到达间隔的最小/最大值。 |
-| `interarrival_us_stddev` | 到达间隔的标准差，反映**抖动**大小。 |
+| 运行时长 | 从启动到进程退出的时长。 |
+| 收到请求 | 收到的请求条数（即发出的 ACK 条数）。 |
+| 处理速率 | 条/秒。 |
+| 吞吐量 | 按 1KB/条计算的接收带宽（MiB/s）。 |
+| 乱序请求 | 请求序列号小于等于上一条的次数。 |
+| 到达间隔（平均/最小/最大） | 相邻两条请求到达时间间隔（微秒 us），目标 1kHz 时理想约 1000 us；最大值同时给出约等于多少毫秒（ms）。 |
+| 到达间隔抖动（标准差） | 反映**抖动**大小（微秒 us）。 |
 
 到达间隔全部在接收端用本机单调时钟计算，不受两机系统时间偏差影响。
 
